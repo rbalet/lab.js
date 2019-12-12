@@ -1,20 +1,20 @@
-import PropTypes from "prop-types";
-import Raven from "raven-js";
-import React, { Component } from "react";
-import { Button, UncontrolledTooltip } from "reactstrap";
-import { addDownloadPlugin } from "../../../logic/io/export/modifiers/local";
-import { addDebugPlugin } from "../../../logic/io/export/modifiers/preview";
-import { populateCache } from "../../../logic/io/preview";
-import PreviewWindow from "../../../logic/io/preview/PreviewWindow";
-import Icon from "../../Icon";
-import { SystemContext } from "../../System";
+import PropTypes from 'prop-types'
+import Raven from 'raven-js'
+import React, { Component } from 'react'
+import { Button, UncontrolledTooltip } from 'reactstrap'
+import { addDownloadPlugin } from '../../../logic/io/export/modifiers/local'
+import { addDebugPlugin } from '../../../logic/io/export/modifiers/preview'
+import { populateCache } from '../../../logic/io/preview'
+import PreviewWindow from '../../../logic/io/preview/PreviewWindow'
+import Icon from '../../Icon'
+import { SystemContext } from '../../System'
 
 export default class PreviewButton extends Component {
   constructor(props) {
-    super(props);
+    super(props)
     this.state = {
-      windowState: "closed"
-    };
+      windowState: 'closed',
+    }
 
     // A PreviewWindow object keeps track
     // of the window state, and provides a
@@ -24,54 +24,54 @@ export default class PreviewButton extends Component {
       // parallel instances, change labjs_preview
       // with a variable instance identifier
       `${process.env.PUBLIC_URL}/api/labjs_preview/index.html`,
-      windowState => this.setState({ windowState })
-    );
+      windowState => this.setState({ windowState }),
+    )
 
-    this.openPreview = this.openPreview.bind(this);
+    this.openPreview = this.openPreview.bind(this)
   }
 
   componentDidMount() {
-    window.addEventListener("preview:show", this.openPreview);
+    window.addEventListener('preview:show', this.openPreview)
   }
 
   componentWillUnmount() {
-    window.removeEventListener("preview:show", this.openPreview);
+    window.removeEventListener('preview:show', this.openPreview)
   }
 
   async openPreview() {
-    this.previewWindow.openOrFocus();
+    this.previewWindow.openOrFocus()
 
     try {
       await populateCache(
         this.context.store.getState(),
-        state => addDownloadPlugin(addDebugPlugin(state))
+        state => addDownloadPlugin(addDebugPlugin(state)),
         // TODO: Ceci n'est pas une pipe
-      );
+      )
 
       // Reload page to provided URL
       // as soon as the preview study is complete.
-      this.previewWindow.reload();
+      this.previewWindow.reload()
     } catch (error) {
-      this.previewWindow.close();
-      if (error.name === "QuotaExceededError") {
+      this.previewWindow.close()
+      if (error.name === 'QuotaExceededError') {
         alert(
           "Sorry, we couldn't generate the preview because " +
             "the browser wouldn't allow us to use storage space. " +
-            "Could you check whether there's room on your hard drive?"
-        );
+            "Could you check whether there's room on your hard drive?",
+        )
       } else {
-        console.log(`Received error while generating preview: ${error}`);
-        Raven.captureException(error);
+        console.log(`Received error while generating preview: ${error}`)
+        Raven.captureException(error)
         alert(
-          "Sorry, an error occured while we were trying " +
-            `to put together the study preview: ${error}`
-        );
+          'Sorry, an error occured while we were trying ' +
+            `to put together the study preview: ${error}`,
+        )
       }
     }
   }
 
   render() {
-    const { windowState } = this.state;
+    const { windowState } = this.state
     return (
       <SystemContext.Consumer>
         {({ previewActive }) => (
@@ -81,25 +81,36 @@ export default class PreviewButton extends Component {
             onClick={() => this.openPreview()}
             onMouseEnter={() => {
               // Prepare potential preview
-              const event = new Event("preview:preemt");
-              window.dispatchEvent(event);
+              const event = new Event('preview:preemt')
+              window.dispatchEvent(event)
             }}
             disabled={!previewActive}
           >
             <Icon
-              icon={windowState === "closed" ? "play" : "sync-alt"}
+              icon={windowState === 'closed' ? 'play' : 'sync-alt'}
               weight="s"
             />
-            <UncontrolledTooltip placement="bottom" target="previewButton">
+            <UncontrolledTooltip
+              placement="bottom"
+              target="previewButton"
+              className="no-ios"
+            >
               Ctrl+Alt+p
+            </UncontrolledTooltip>
+            <UncontrolledTooltip
+              placement="bottom"
+              target="previewButton"
+              className="only-ios"
+            >
+              mac specificity
             </UncontrolledTooltip>
           </Button>
         )}
       </SystemContext.Consumer>
-    );
+    )
   }
 }
 
 PreviewButton.contextTypes = {
-  store: PropTypes.object
-};
+  store: PropTypes.object,
+}

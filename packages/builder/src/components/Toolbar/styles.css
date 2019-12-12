@@ -1,4 +1,18 @@
-.toolbar button .fas, .toolbar button .far, .toolbar button .fal {
+.toolbar button .fas,
+.toolbar button .far,
+.toolbar button .fal {
   position: relative;
   top: 0.05rem;
+}
+
+@supports not (-webkit-overflow-scrolling: touch) {
+  .only-ios {
+    display: none;
+  }
+}
+
+@supports (-webkit-overflow-scrolling: touch) {
+  .no-ios {
+    display: none;
+  }
 }
