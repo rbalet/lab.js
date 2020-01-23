@@ -72,6 +72,7 @@ fabric.Image.fromObject = function(_object, callback) {
 // (apparently fabric requires camelcased constructors)
 fabric.Aoi = fabric.util.createClass(fabric.Rect, {
   type: 'aoi',
+  label: '',
   initialize: function(options={}) {
     options.fill = 'rgba(0, 0, 0, 0.2)'
     this.callSuper('initialize', options)

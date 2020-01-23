@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, Component } from 'react'
 import PropTypes from 'prop-types'
 
 import { FormGroup, Input, Label, Col,
@@ -14,7 +14,7 @@ import Confirm from '../../../Modal/components/Confirm'
 
 import { plugins, loadPlugin } from '../../../../logic/plugins/library'
 
-const PluginHeader = ({ metaData }) =>
+const PluginHeader = ({ index, metaData, formDispatch }) =>
   <>
     <h3 className="h5">
       { metaData.title }
@@ -26,12 +26,22 @@ const PluginHeader = ({ metaData }) =>
     <hr />
   </>
 
-const PluginOption = ({ option, value, label, type, defaultValue,
-  placeholder, help }) =>
-  <FormGroup row>
-    <Label for={ option } sm={ 3 }>{ label }</Label>
-    <Col sm={ 9 }>
-      <Control.text
+const PluginControl = ({ option, value, type, options, defaultValue, placeholder }) => {
+  switch (type) {
+    case 'select':
+      return <Control.select
+        defaultValue={ value || defaultValue }
+        model={ `.${ option }` }
+        className="form-control custom-select"
+        style={{
+          fontFamily: 'Fira Mono',
+        }}
+        debounce={ 300 }
+      >
+        { options.map(o => <option value={ o.coding }>{ o.label }</option>) }
+      </Control.select>
+    default:
+      return <Control.text
         defaultValue={ value || defaultValue }
         model={ `.${ option }` }
         component={ Input }
@@ -41,8 +51,17 @@ const PluginOption = ({ option, value, label, type, defaultValue,
         }}
         debounce={ 300 }
       />
+  }
+}
+
+const PluginOption = (props) =>
+  <FormGroup row>
+    <Label for={ props.option } sm={ 3 }>{ props.label }</Label>
+    <Col sm={ 9 }>
+      <PluginControl { ...props } />
       {
-        help && <small className="form-text text-muted">{ help }</small>
+        props.help &&
+          <small className="form-text text-muted">{ props.help }</small>
       }
     </Col>
   </FormGroup>
@@ -51,11 +70,12 @@ const PluginOptions = ({ index, data, metaData }) =>
   <Fieldset model={ `.plugins[${ index }]` }>
     {
       Object.entries(metaData.options).map(
-        ([option, { label, type, default: defaultValue, placeholder, help }]) =>
+        ([option, { label, type, options=[], default: defaultValue, placeholder, help }]) =>
           <PluginOption
             key={ `plugin-${ index }-${ option }` }
             option={ option }
             value={ data[option] }
+            options={ options }
             label={ label }
             type={ type }
             defaultValue={ defaultValue }
@@ -140,7 +160,7 @@ PluginAddButton.contextTypes = {
   ]),
 }
 
-const Plugin = ({ index, data, metaData }) =>
+const Plugin = ({ index, data, metaData, formDispatch }) =>
   <CardBody className="border-bottom">
     {/* Hidden field to preserve the plugin type option */}
     <Control.text
@@ -148,7 +168,7 @@ const Plugin = ({ index, data, metaData }) =>
       defaultValue={ data.type }
       hidden={ true }
     />
-    <PluginHeader index={ index } data={ data } metaData={ metaData } />
+    <PluginHeader index={ index } data={ data } metaData={ metaData } formDispatch={ formDispatch }/>
     <PluginOptions index={ index } data={ data } metaData={ metaData } />
   </CardBody>
 
@@ -171,37 +191,51 @@ const PluginHint = ({ visible }) =>
       </div>
     : null
 
-export default ({ id, data }) =>
-  <Card title="Plugins" badge="Beta" wrapContent={ false }>
-    <PluginHint visible={ (data.plugins || []).length === 0 } />
-    <ComponentForm
-      id={ id }
-      data={ data }
-      keys={ ['plugins'] }
-      // The react-redux-form logic converts the plugins array into
-      // an object. This reverts that change before saving the data.
-      postProcess={ data => ({
-        ...data,
-        plugins: Array.isArray(data.plugins)
-          ? data.plugins
-          : Object.values(data.plugins)
-      }) }
-    >
-      {
-        (data.plugins || []).map(pluginData => ({
-            pluginData,
-            metaData: loadPlugin(pluginData.type),
-          }))
-          .filter(({ metaData }) => metaData !== undefined)
-          .map(({ pluginData, metaData }, index) =>
-            <Plugin
-              key={ `plugin-${ index }` }
-              index={ index }
-              data={ pluginData }
-              metaData={ metaData }
-            />
-          )
-      }
-    </ComponentForm>
-    <PluginAddButton muted={ (data.plugins || []).length > 0 } />
-  </Card>
+export default class extends Component {
+  constructor(props) {
+    super(props)
+    this.formDispatch = () => console.log('invalid dispatch')
+  }
+
+  render() {
+    const { id, data } = this.props
+    return (
+      <Card title="Plugins" badge="Beta" wrapContent={ false }>
+        <PluginHint visible={ (data.plugins || []).length === 0 } />
+        <ComponentForm
+          id={ id }
+          data={ data }
+          keys={ ['plugins'] }
+          // The react-redux-form logic converts the plugins array into
+          // an object. This reverts that change before saving the data.
+          postProcess={ data => ({
+            ...data,
+            plugins: Array.isArray(data.plugins)
+              ? data.plugins
+              : Object.values(data.plugins)
+          }) }
+          getDispatch={ dispatch => this.formDispatch = dispatch }
+        >
+          {
+            (data.plugins || []).map(pluginData => ({
+                pluginData,
+                metaData: loadPlugin(pluginData.type),
+              }))
+              .filter(({ metaData }) => metaData !== undefined)
+              .map(({ pluginData, metaData }, index) =>
+                <Plugin
+                  key={ `plugin-${ index }` }
+                  index={ index }
+                  data={ pluginData }
+                  metaData={ metaData }
+                  formDispatch={ action => this.formDispatch(action) }
+                  // TODO: Reduce prop drilling
+                />
+              )
+          }
+        </ComponentForm>
+        <PluginAddButton muted={ (data.plugins || []).length > 0 } />
+      </Card>
+    )
+  }
+}

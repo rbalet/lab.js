@@ -1,4 +1,4 @@
-.. _tutorial/deploy/third-party/JATOS:
+.. _tutorial/deploy/third-party/jatos:
 
 Collecting data with JATOS
 ==========================
@@ -51,6 +51,8 @@ In the resulting ``data.frame``, the JATOS participant ID is available through t
   read_file('jatos_results.txt') %>%
     # ... split it into lines ...
     str_split('\n') %>% first() %>%
+    # ... filter empty rows ...
+    discard(function(x) x == '') %>%
     # ... parse JSON into a data.frame
     map_dfr(fromJSON, flatten=T) -> data
 
